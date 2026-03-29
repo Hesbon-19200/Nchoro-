@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Portfolio Project",
+      "description": "A project showcased in the portfolio across design, development, or data categories.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Project title" },
+        "category": { "type": "string", "enum": ["design", "development", "data"], "description": "Project category" },
+        "description": { "type": "string", "description": "Short overview" },
+        "problemStatement": { "type": "string", "description": "The challenge faced" },
+        "solution": { "type": "string", "description": "The solution implemented" },
+        "toolsUsed": { "type": "array", "items": { "type": "string" }, "description": "Tools and technologies used" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "URL to project image" },
+        "githubLink": { "type": "string", "format": "uri", "description": "GitHub repository link" },
+        "liveLink": { "type": "string", "format": "uri", "description": "Live demo link" },
+        "createdAt": { "type": "string", "description": "Year of creation" },
+        "authorUid": { "type": "string", "description": "UID of the admin who created the project" }
+      },
+      "required": ["title", "category", "description", "imageUrl", "createdAt"]
+    },
+    "ContactMessage": {
+      "title": "Contact Message",
+      "description": "A message sent by a visitor through the contact form.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Sender's name" },
+        "email": { "type": "string", "format": "email", "description": "Sender's email" },
+        "subject": { "type": "string", "description": "Message subject" },
+        "message": { "type": "string", "description": "Message content" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of submission" }
+      },
+      "required": ["name", "email", "subject", "message", "createdAt"]
+    },
+    "Skill": {
+      "title": "Professional Skill",
+      "description": "A skill or technology proficiency.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Skill name" },
+        "category": { "type": "string", "enum": ["Design", "Development", "Analytics", "Tools"], "description": "Skill category" },
+        "proficiency": { "type": "number", "description": "Proficiency percentage (0-100)" },
+        "icon": { "type": "string", "description": "Lucide icon name" }
+      },
+      "required": ["name", "category", "proficiency"]
+    },
+    "Profile": {
+      "title": "User Profile",
+      "description": "Personal information and branding content.",
+      "type": "object",
+      "properties": {
+        "aboutMe": { "type": "string", "description": "About me section content" },
+        "aboutMeShort": { "type": "string", "description": "Short version of about me for home page" },
+        "profileImageUrl": { "type": "string", "format": "uri", "description": "URL to profile image" },
+        "cvUrl": { "type": "string", "format": "uri", "description": "URL to CV/Resume" },
+        "tagline": { "type": "string", "description": "Hero section tagline" }
+      },
+      "required": ["aboutMe", "tagline"]
+    },
+    "Experience": {
+      "title": "Work Experience",
+      "description": "A professional role held in the past or present.",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "description": "Job title" },
+        "company": { "type": "string", "description": "Company name" },
+        "period": { "type": "string", "description": "Time period (e.g., 2020 - Present)" },
+        "description": { "type": "string", "description": "Key responsibilities and achievements" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["role", "company", "period", "description", "order"]
+    },
+    "Education": {
+      "title": "Education",
+      "description": "An academic degree or certification.",
+      "type": "object",
+      "properties": {
+        "degree": { "type": "string", "description": "Degree or certification name" },
+        "institution": { "type": "string", "description": "School or university name" },
+        "period": { "type": "string", "description": "Time period (e.g., 2016 - 2020)" },
+        "description": { "type": "string", "description": "Additional details (optional)" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["degree", "institution", "period", "order"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Collection of portfolio projects"
+    },
+    "/messages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Collection of contact form submissions"
+    },
+    "/skills/{skillId}": {
+      "schema": "Skill",
+      "description": "Collection of professional skills"
+    },
+    "/settings/profile": {
+      "schema": "Profile",
+      "description": "Single document for profile settings"
+    },
+    "/experience/{experienceId}": {
+      "schema": "Experience",
+      "description": "Collection of work experience items"
+    },
+    "/education/{educationId}": {
+      "schema": "Education",
+      "description": "Collection of education items"
+    }
+  }
+}

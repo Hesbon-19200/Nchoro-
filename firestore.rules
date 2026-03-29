@@ -1,0 +1,209 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: projects
+// Document ID: auto-generated or projectId
+// Fields:
+//   - title: string (required, 1-100 chars)
+//   - category: string (required, enum: design, development, data)
+//   - description: string (required, 1-500 chars)
+//   - problemStatement: string (optional, 1-2000 chars)
+//   - solution: string (optional, 1-2000 chars)
+//   - toolsUsed: list (required, max 20 items, each string max 50 chars)
+//   - imageUrl: string (required, valid URL)
+//   - githubLink: string (optional, valid URL)
+//   - liveLink: string (optional, valid URL)
+//   - createdAt: string (required, year format)
+//   - authorUid: string (required, matches creator)
+//
+// Collection: messages
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 1-100 chars)
+//   - email: string (required, valid email)
+//   - whatsapp: string (optional, 1-20 chars)
+//   - subject: string (required, 1-200 chars)
+//   - message: string (required, 1-2000 chars)
+//   - createdAt: string (required, ISO 8601)
+//
+// Collection: skills
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 1-50 chars)
+//   - category: string (required, enum: Design, Development, Analytics, Tools, Tools & Others)
+//   - proficiency: number (required, 0-100)
+//   - icon: string (optional, 1-50 chars)
+//
+// Collection: settings
+// Document ID: profile
+// Fields:
+//   - aboutMe: string (required, 1-5000 chars)
+//   - aboutMeShort: string (optional, 1-500 chars)
+//   - profileImageUrl: string (optional, valid URL)
+//   - cvUrl: string (optional, valid URL)
+//   - tagline: string (required, 1-200 chars)
+//
+// Collection: experience
+// Document ID: auto-generated
+// Fields:
+//   - role: string (required, 1-100 chars)
+//   - company: string (required, 1-100 chars)
+//   - period: string (required, 1-50 chars)
+//   - description: string (required, 1-2000 chars)
+//   - order: number (required)
+//
+// Collection: education
+// Document ID: auto-generated
+// Fields:
+//   - degree: string (required, 1-100 chars)
+//   - institution: string (required, 1-100 chars)
+//   - period: string (required, 1-50 chars)
+//   - description: string (optional, 1-1000 chars)
+//   - order: number (required)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "nchorohesbon96@gmail.com" || request.auth.uid == "Ltc1sgqXcfZ45kGRXBeY5qCYfFD2");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^/.*"));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['title', 'category', 'description', 'imageUrl', 'createdAt', 'toolsUsed', 'authorUid']) &&
+             data.keys().hasOnly(['title', 'category', 'description', 'problemStatement', 'solution', 'toolsUsed', 'imageUrl', 'githubLink', 'liveLink', 'createdAt', 'authorUid']) &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.category in ['design', 'development', 'data'] &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 500 &&
+             data.toolsUsed is list && data.toolsUsed.size() <= 20 &&
+             isValidUrl(data.imageUrl) &&
+             (!('githubLink' in data) || isValidUrl(data.githubLink)) &&
+             (!('liveLink' in data) || isValidUrl(data.liveLink)) &&
+             data.authorUid == request.auth.uid;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['name', 'email', 'subject', 'message', 'createdAt']) &&
+             data.keys().hasOnly(['name', 'email', 'whatsapp', 'subject', 'message', 'createdAt']) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             isValidEmail(data.email) &&
+             (!('whatsapp' in data) || (data.whatsapp is string && data.whatsapp.size() <= 20)) &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 200 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 2000 &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidSkill(data) {
+      return data.keys().hasAll(['name', 'category', 'proficiency']) &&
+             data.keys().hasOnly(['name', 'category', 'proficiency', 'icon']) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+             data.category in ['Design', 'Development', 'Analytics', 'Tools', 'Tools & Others'] &&
+             data.proficiency is number && data.proficiency >= 0 && data.proficiency <= 100 &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() <= 50));
+    }
+
+    function isValidProfile(data) {
+      return data.keys().hasAll(['aboutMe', 'tagline']) &&
+             data.keys().hasOnly(['aboutMe', 'aboutMeShort', 'profileImageUrl', 'cvUrl', 'tagline']) &&
+             data.aboutMe is string && data.aboutMe.size() >= 1 && data.aboutMe.size() <= 5000 &&
+             (!('aboutMeShort' in data) || (data.aboutMeShort is string && data.aboutMeShort.size() <= 500)) &&
+             (!('profileImageUrl' in data) || isValidUrl(data.profileImageUrl)) &&
+             (!('cvUrl' in data) || isValidUrl(data.cvUrl)) &&
+             data.tagline is string && data.tagline.size() >= 1 && data.tagline.size() <= 200;
+    }
+
+    function isValidExperience(data) {
+      return data.keys().hasAll(['role', 'company', 'period', 'description', 'order']) &&
+             data.keys().hasOnly(['role', 'company', 'period', 'description', 'order']) &&
+             data.role is string && data.role.size() >= 1 && data.role.size() <= 100 &&
+             data.company is string && data.company.size() >= 1 && data.company.size() <= 100 &&
+             data.period is string && data.period.size() >= 1 && data.period.size() <= 50 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 2000 &&
+             data.order is number;
+    }
+
+    function isValidEducation(data) {
+      return data.keys().hasAll(['degree', 'institution', 'period', 'order']) &&
+             data.keys().hasOnly(['degree', 'institution', 'period', 'description', 'order']) &&
+             data.degree is string && data.degree.size() >= 1 && data.degree.size() <= 100 &&
+             data.institution is string && data.institution.size() >= 1 && data.institution.size() <= 100 &&
+             data.period is string && data.period.size() >= 1 && data.period.size() <= 50 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+             data.order is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /projects/{projectId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAdmin() && isValidProject(request.resource.data);
+      allow update: if isAdmin() && isValidProject(request.resource.data) && request.resource.data.authorUid == resource.data.authorUid;
+      allow delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if isValidMessage(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /skills/{skillId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidSkill(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /settings/profile {
+      allow read: if true;
+      allow write: if isAdmin() && isValidProfile(request.resource.data);
+    }
+
+    match /experience/{experienceId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidExperience(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /education/{educationId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidEducation(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
