@@ -60,48 +60,94 @@ export default function Hero() {
         <MousePointer2 size={40} />
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <motion.span 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-block py-1 px-3 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-brand-primary mb-6"
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-left"
           >
-            Available for new projects
-          </motion.span>
-          <h1 className="text-5xl md:text-8xl font-display font-bold mb-6 leading-tight tracking-tighter">
-            {profile?.tagline || (
-              <>Creative <span className="text-gradient">Designer</span> & <br />
-              Full-Stack <span className="text-gradient">Developer</span></>
-            )}
-          </h1>
-          <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            {profile?.aboutMeShort || "I build high-performance web applications, design stunning visuals, and analyze complex data to solve real-world problems."}
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/portfolio"
-              className="w-full sm:w-auto px-10 py-5 bg-gradient-brand rounded-full font-bold flex items-center justify-center gap-2 hover:shadow-glow transition-all hover:scale-105 active:scale-95"
+            <motion.span 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-block py-1 px-3 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-brand-primary mb-6"
             >
-              View My Work <ArrowRight size={18} />
-            </Link>
-            {profile?.cvUrl && (
-              <a
-                href={profile.cvUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto px-10 py-5 bg-white/5 border border-white/10 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
+              Available for new projects
+            </motion.span>
+            <h1 className="text-5xl md:text-7xl xl:text-9xl font-display font-bold mb-8 leading-[0.9] tracking-tighter">
+              {profile?.tagline || (
+                <>Creative <span className="text-gradient">Designer</span> <br />
+                & Full-Stack <span className="text-gradient">Developer</span></>
+              )}
+            </h1>
+            <p className="text-gray-400 text-lg md:text-xl max-w-xl mb-12 leading-relaxed font-light">
+              {profile?.aboutMeShort || "I build high-performance web applications, design stunning visuals, and analyze complex data to solve real-world problems."}
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Link
+                to="/projects"
+                className="w-full sm:w-auto px-10 py-5 bg-gradient-brand rounded-full font-bold flex items-center justify-center gap-2 hover:shadow-glow transition-all hover:scale-105 active:scale-95"
               >
-                Download CV <Download size={18} />
-              </a>
-            )}
-          </div>
-        </motion.div>
+                View My Work <ArrowRight size={18} />
+              </Link>
+              {profile?.cvUrl && (
+                <a
+                  href={profile.cvUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-10 py-5 bg-white/5 border border-white/10 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
+                >
+                  Download CV <Download size={18} />
+                </a>
+              )}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative hidden lg:block"
+          >
+            <div className="relative z-10 aspect-square rounded-[3rem] overflow-hidden border-2 border-brand-primary/20 p-4 bg-bg-dark/50 backdrop-blur-sm">
+              <img
+                src={profile?.profileImageUrl || "https://picsum.photos/seed/profile/800/800"}
+                alt="Profile"
+                className="w-full h-full object-cover rounded-[2.5rem]"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes('picsum.photos')) {
+                    target.src = "https://picsum.photos/seed/profile/800/800";
+                  }
+                }}
+              />
+            </div>
+            {/* Decorative rings */}
+            <div className="absolute -inset-4 border border-brand-primary/10 rounded-[3.5rem] -z-10 animate-pulse" />
+            <div className="absolute -inset-8 border border-brand-secondary/5 rounded-[4rem] -z-20" />
+            
+            {/* Floating badges */}
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-6 -right-6 glass p-4 rounded-2xl border border-white/10 shadow-glow"
+            >
+              <div className="text-brand-primary font-bold text-xl">5+</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Years Exp.</div>
+            </motion.div>
+
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute -bottom-6 -left-6 glass p-4 rounded-2xl border border-white/10 shadow-glow"
+            >
+              <div className="text-brand-secondary font-bold text-xl">50+</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Projects</div>
+            </motion.div>
+          </motion.div>
+        </div>
 
         {/* Stats */}
         <motion.div

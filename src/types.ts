@@ -13,6 +13,7 @@ export interface Project {
   githubLink?: string;
   liveLink?: string;
   createdAt: string;
+  timestamp?: number;
 }
 
 export interface Skill {
@@ -56,5 +57,15 @@ export interface Education {
   institution: string;
   period: string;
   description?: string;
+  order: number;
+}
+
+export interface Certificate {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  imageUrl: string;
+  link?: string;
   order: number;
 }

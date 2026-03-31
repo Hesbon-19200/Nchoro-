@@ -82,6 +82,20 @@
         "order": { "type": "number", "description": "Display order" }
       },
       "required": ["degree", "institution", "period", "order"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "A professional certificate or achievement.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Certificate title" },
+        "issuer": { "type": "string", "description": "Issuing organization" },
+        "date": { "type": "string", "description": "Date of issuance" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "URL to certificate image" },
+        "link": { "type": "string", "format": "uri", "description": "Link to verify certificate (optional)" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["title", "issuer", "date", "imageUrl", "order"]
     }
   },
   "firestore": {
@@ -108,6 +122,10 @@
     "/education/{educationId}": {
       "schema": "Education",
       "description": "Collection of education items"
+    },
+    "/certificates/{certificateId}": {
+      "schema": "Certificate",
+      "description": "Collection of archived certificates"
     }
   }
 }

@@ -27,13 +27,25 @@ export default function AIChatBot() {
   useEffect(() => {
     const initChat = async () => {
       try {
-        const [projects, skills, experience, education, profile] = await Promise.all([
+        const [projectsRes, skillsRes, experienceRes, educationRes, profileRes] = await Promise.allSettled([
           getProjects(),
           getSkills(),
           getExperience(),
           getEducation(),
           getProfile()
         ]);
+
+        const projects = projectsRes.status === 'fulfilled' ? projectsRes.value : [];
+        const skills = skillsRes.status === 'fulfilled' ? skillsRes.value : [];
+        const experience = experienceRes.status === 'fulfilled' ? experienceRes.value : [];
+        const education = educationRes.status === 'fulfilled' ? educationRes.value : [];
+        const profile = profileRes.status === 'fulfilled' ? profileRes.value : null;
+
+        if (projectsRes.status === 'rejected') console.warn("Failed to fetch projects for AI chat", projectsRes.reason);
+        if (skillsRes.status === 'rejected') console.warn("Failed to fetch skills for AI chat", skillsRes.reason);
+        if (experienceRes.status === 'rejected') console.warn("Failed to fetch experience for AI chat", experienceRes.reason);
+        if (educationRes.status === 'rejected') console.warn("Failed to fetch education for AI chat", educationRes.reason);
+        if (profileRes.status === 'rejected') console.warn("Failed to fetch profile for AI chat", profileRes.reason);
 
         const systemInstruction = generateSystemInstruction(
           profile,

@@ -64,6 +64,16 @@ rules_version = '2';
 //   - description: string (optional, 1-1000 chars)
 //   - order: number (required)
 //
+// Collection: certificates
+// Document ID: auto-generated
+// Fields:
+//   - title: string (required, 1-200 chars)
+//   - issuer: string (required, 1-100 chars)
+//   - date: string (required, 1-50 chars)
+//   - imageUrl: string (required, valid URL)
+//   - link: string (optional, valid URL)
+//   - order: number (required)
+//
 // ===============================================================
 
 service cloud.firestore {
@@ -77,13 +87,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "nchorohesbon96@gmail.com" || request.auth.uid == "Ltc1sgqXcfZ45kGRXBeY5qCYfFD2");
+        (
+          (request.auth.token.email == "nchorohesbon96@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
     }
 
     function isValidUrl(url) {
-      return url is string && (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^/.*"));
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^/.*") || url.size() == 0);
     }
 
     function isValidEmail(email) {
@@ -100,7 +117,7 @@ service cloud.firestore {
 
     function isValidProject(data) {
       return data.keys().hasAll(['title', 'category', 'description', 'imageUrl', 'createdAt', 'toolsUsed', 'authorUid']) &&
-             data.keys().hasOnly(['title', 'category', 'description', 'problemStatement', 'solution', 'toolsUsed', 'imageUrl', 'githubLink', 'liveLink', 'createdAt', 'authorUid']) &&
+             data.keys().hasOnly(['title', 'category', 'description', 'problemStatement', 'solution', 'toolsUsed', 'imageUrl', 'githubLink', 'liveLink', 'createdAt', 'authorUid', 'timestamp']) &&
              data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
              data.category in ['design', 'development', 'data'] &&
              data.description is string && data.description.size() >= 1 && data.description.size() <= 500 &&
@@ -108,6 +125,7 @@ service cloud.firestore {
              isValidUrl(data.imageUrl) &&
              (!('githubLink' in data) || isValidUrl(data.githubLink)) &&
              (!('liveLink' in data) || isValidUrl(data.liveLink)) &&
+             (!('timestamp' in data) || data.timestamp is number) &&
              data.authorUid == request.auth.uid;
     }
 
@@ -134,11 +152,11 @@ service cloud.firestore {
     function isValidProfile(data) {
       return data.keys().hasAll(['aboutMe', 'tagline']) &&
              data.keys().hasOnly(['aboutMe', 'aboutMeShort', 'profileImageUrl', 'cvUrl', 'tagline']) &&
-             data.aboutMe is string && data.aboutMe.size() >= 1 && data.aboutMe.size() <= 5000 &&
+             data.aboutMe is string && data.aboutMe.size() <= 5000 &&
              (!('aboutMeShort' in data) || (data.aboutMeShort is string && data.aboutMeShort.size() <= 500)) &&
              (!('profileImageUrl' in data) || isValidUrl(data.profileImageUrl)) &&
              (!('cvUrl' in data) || isValidUrl(data.cvUrl)) &&
-             data.tagline is string && data.tagline.size() >= 1 && data.tagline.size() <= 200;
+             data.tagline is string && data.tagline.size() <= 200;
     }
 
     function isValidExperience(data) {
@@ -158,6 +176,17 @@ service cloud.firestore {
              data.institution is string && data.institution.size() >= 1 && data.institution.size() <= 100 &&
              data.period is string && data.period.size() >= 1 && data.period.size() <= 50 &&
              (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+             data.order is number;
+    }
+
+    function isValidCertificate(data) {
+      return data.keys().hasAll(['title', 'issuer', 'date', 'imageUrl', 'order']) &&
+             data.keys().hasOnly(['title', 'issuer', 'date', 'imageUrl', 'link', 'order']) &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.issuer is string && data.issuer.size() >= 1 && data.issuer.size() <= 100 &&
+             data.date is string && data.date.size() >= 1 && data.date.size() <= 50 &&
+             isValidUrl(data.imageUrl) &&
+             (!('link' in data) || isValidUrl(data.link)) &&
              data.order is number;
     }
 
@@ -202,8 +231,26 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /certificates/{certificateId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidCertificate(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
     match /test/connection {
       allow read: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && (
+        (isOwner(userId) && request.resource.data.role == 'user') || 
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && request.resource.data.role == resource.data.role) || 
+        isAdmin()
+      );
     }
   }
 }

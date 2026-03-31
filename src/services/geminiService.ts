@@ -15,7 +15,7 @@ export const generateSystemInstruction = (
   const experienceList = experience.map(e => `- ${e.role} at ${e.company} (${e.period}): ${e.description}`).join("\n");
   const educationList = education.map(edu => `- ${edu.degree} from ${edu.institution} (${edu.period})`).join("\n");
 
-  return `You are an AI assistant for Hesbon Nchoro's portfolio website. 
+  return `You are an AI assistant for Hesbon Nchoro's projects website (Nchoro TechHub). 
 Your goal is to help visitors learn more about Hesbon, his skills, projects, and professional background.
 
 About Hesbon:

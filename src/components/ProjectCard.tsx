@@ -20,12 +20,17 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
       className="group relative bg-bg-card rounded-3xl overflow-hidden border border-white/5 hover:border-brand-primary/30 transition-all hover:shadow-glow"
     >
       {/* Image Container */}
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-video overflow-hidden bg-white/5">
         <img
-          src={project.imageUrl}
+          src={project.imageUrl || `https://picsum.photos/seed/${project.id}/800/450`}
           alt={project.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          referrerPolicy="no-referrer"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (!target.src.includes('picsum.photos')) {
+              target.src = `https://picsum.photos/seed/${project.id}/800/450`;
+            }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-bg-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
           <div className="flex gap-4">
@@ -44,32 +49,32 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
       </div>
 
       {/* Content */}
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-8">
+        <div className="flex items-center justify-between mb-4">
           <span className={cn(
-            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-            project.category === 'design' ? "bg-brand-accent/20 text-brand-accent" :
-            project.category === 'development' ? "bg-brand-primary/20 text-brand-primary" :
-            "bg-brand-secondary/20 text-brand-secondary"
+            "px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
+            project.category === 'design' ? "border-brand-accent/30 text-brand-accent bg-brand-accent/5" :
+            project.category === 'development' ? "border-brand-primary/30 text-brand-primary bg-brand-primary/5" :
+            "border-brand-secondary/30 text-brand-secondary bg-brand-secondary/5"
           )}>
             {project.category}
           </span>
-          <span className="text-xs text-gray-500">{project.createdAt}</span>
+          <span className="text-[10px] text-gray-500 font-mono uppercase">{project.createdAt}</span>
         </div>
         
-        <h3 className="text-xl font-display font-bold mb-3 group-hover:text-brand-primary transition-colors">
+        <h3 className="text-2xl font-display font-bold mb-4 group-hover:text-brand-primary transition-colors leading-tight">
           {project.title}
         </h3>
         
-        <p className="text-gray-400 text-sm mb-6 line-clamp-2">
+        <p className="text-gray-400 text-sm mb-8 line-clamp-2 leading-relaxed font-light">
           {project.description}
         </p>
 
         <Link
           to={`/project/${project.id}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-brand-primary transition-colors"
+          className="group/btn inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white hover:text-brand-primary transition-all"
         >
-          View Case Study <ArrowRight size={16} />
+          Explore Project <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
         </Link>
       </div>
     </motion.div>

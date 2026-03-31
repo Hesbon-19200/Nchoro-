@@ -74,7 +74,7 @@ export default function Skills() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {skillCategories.map((cat, i) => (
             <motion.div
               key={cat.title}
@@ -82,13 +82,14 @@ export default function Skills() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="p-8 rounded-3xl bg-bg-card border border-white/5 hover:border-white/10 transition-all group"
+              className="p-10 rounded-[2.5rem] glass border border-white/5 hover:border-brand-primary/20 transition-all group relative overflow-hidden"
             >
-              <div className={`w-14 h-14 rounded-2xl ${cat.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <cat.icon className={cat.color} size={28} />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 rounded-full blur-3xl -z-10 group-hover:bg-brand-primary/10 transition-colors" />
+              <div className={`w-16 h-16 rounded-2xl ${cat.bg} flex items-center justify-center mb-8 group-hover:scale-110 transition-transform shadow-lg`}>
+                <cat.icon className={cat.color} size={32} />
               </div>
-              <h3 className="text-2xl font-display font-bold mb-6">{cat.title}</h3>
-              <div className="flex flex-wrap gap-2">
+              <h3 className="text-2xl font-display font-bold mb-8 tracking-tight">{cat.title}</h3>
+              <div className="flex flex-wrap gap-2.5">
                 {isLoading ? (
                   <div className="h-10 flex items-center justify-center w-full">
                     <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
@@ -97,7 +98,7 @@ export default function Skills() {
                   skills.filter(s => s.category === cat.category).map((skill) => (
                     <span
                       key={skill.id}
-                      className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400 hover:text-white hover:border-white/20 transition-all cursor-default"
+                      className="px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:border-white/30 transition-all cursor-default"
                     >
                       {skill.name}
                     </span>

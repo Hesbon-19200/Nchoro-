@@ -15,7 +15,7 @@ const categories: { id: ProjectCategory | 'all'; name: string }[] = [
   { id: 'data', name: 'Data' },
 ];
 
-export default function Portfolio() {
+export default function Projects() {
   const { category: urlCategory } = useParams<{ category?: ProjectCategory }>();
   const [activeCategory, setActiveCategory] = useState<ProjectCategory | 'all'>(urlCategory || 'all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +52,7 @@ export default function Portfolio() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-display font-bold mb-6"
           >
-            My <span className="text-gradient">Portfolio</span>
+            Nchoro <span className="text-gradient">TechHub</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -65,15 +65,15 @@ export default function Portfolio() {
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-6 items-center justify-between mb-16 glass p-6 rounded-[2rem] border border-white/10">
+        <div className="flex flex-col md:flex-row gap-8 items-center justify-between mb-20 glass p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
           {/* Filter Tabs */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={cn(
-                  "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border",
+                  "px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all border",
                   activeCategory === cat.id 
                     ? "bg-brand-primary text-white border-transparent shadow-glow" 
                     : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
@@ -85,14 +85,14 @@ export default function Portfolio() {
           </div>
 
           {/* Search Input */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
             <input
               type="text"
-              placeholder="Search projects or tools..."
+              placeholder="Search projects, tools, or tech..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 py-4 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all placeholder:text-gray-600"
             />
           </div>
         </div>

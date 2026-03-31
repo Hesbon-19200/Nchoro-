@@ -63,7 +63,12 @@ export default function About() {
                 src={profile?.profileImageUrl || "https://picsum.photos/seed/profile/800/800"}
                 alt="Profile"
                 className="w-full h-full object-cover rounded-[2.5rem]"
-                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes('picsum.photos')) {
+                    target.src = "https://picsum.photos/seed/profile/800/800";
+                  }
+                }}
               />
             </div>
             {/* Decorative elements */}
@@ -114,33 +119,36 @@ export default function About() {
         </div>
 
         {/* Skills Section */}
-        <section className="mb-20">
-          <h2 className="text-3xl font-display font-bold mb-12 text-center">Technical <span className="text-gradient">Expertise</span></h2>
+        <section className="mb-32">
+          <h2 className="text-4xl font-display font-bold mb-16 text-center">Technical <span className="text-gradient">Expertise</span></h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {skillCategories.map((cat) => (
-              <div key={cat.name} className="glass p-8 rounded-3xl">
-                <div className="flex items-center gap-3 mb-6 text-brand-primary">
-                  {cat.icon}
-                  <h3 className="text-xl font-bold">{cat.name}</h3>
+              <div key={cat.name} className="glass p-10 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 rounded-full blur-2xl -z-10" />
+                <div className="flex items-center gap-4 mb-10 text-brand-primary">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center shadow-inner">
+                    {cat.icon}
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight">{cat.name}</h3>
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {isLoading ? (
                     <div className="h-20 flex items-center justify-center">
                       <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                   ) : skills.filter(s => s.category === cat.name).length > 0 ? (
                     skills.filter(s => s.category === cat.name).map((skill) => (
-                      <div key={skill.id} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-300">{skill.name}</span>
+                      <div key={skill.id} className="space-y-3">
+                        <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest">
+                          <span className="text-gray-400">{skill.name}</span>
                           <span className="text-brand-primary">{skill.proficiency}%</span>
                         </div>
-                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             whileInView={{ width: `${skill.proficiency}%` }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full bg-brand-primary"
+                            transition={{ duration: 1.5, ease: "circOut" }}
+                            className="h-full bg-gradient-to-r from-brand-primary to-brand-secondary"
                           />
                         </div>
                       </div>

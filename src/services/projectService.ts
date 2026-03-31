@@ -20,7 +20,7 @@ const COLLECTION_NAME = 'projects';
 
 export const getProjects = async (): Promise<Project[]> => {
   try {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
   } catch (error) {
@@ -30,7 +30,7 @@ export const getProjects = async (): Promise<Project[]> => {
 };
 
 export const subscribeToProjects = (callback: (projects: Project[]) => void) => {
-  const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+  const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
   return onSnapshot(q, (snapshot) => {
     const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
     callback(projects);
@@ -67,6 +67,7 @@ export const addProject = async (project: Omit<Project, 'id'>): Promise<string> 
       toolsUsed: project.toolsUsed || [],
       imageUrl: project.imageUrl || '',
       createdAt: project.createdAt || new Date().getFullYear().toString(),
+      timestamp: Date.now(),
       authorUid: user.uid,
     };
 
@@ -88,7 +89,7 @@ export const updateProject = async (id: string, project: Partial<Project>): Prom
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
     // Only send allowed fields to avoid failing the security rules' hasOnly check
-    const allowedFields = ['title', 'category', 'description', 'problemStatement', 'solution', 'toolsUsed', 'imageUrl', 'githubLink', 'liveLink', 'createdAt'];
+    const allowedFields = ['title', 'category', 'description', 'problemStatement', 'solution', 'toolsUsed', 'imageUrl', 'githubLink', 'liveLink', 'createdAt', 'timestamp'];
     const filteredData: Record<string, any> = {};
     
     Object.keys(project).forEach(key => {

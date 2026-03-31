@@ -3,7 +3,7 @@ import { X, Save, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
 import { Project } from '../types';
 import { motion } from 'motion/react';
 import React, { useState, useRef } from 'react';
-import { storage, ref, uploadBytes, getDownloadURL } from '../firebase';
+import { storage, ref, uploadBytesResumable, getDownloadURL, uploadFile } from '../firebase';
 import { toast } from 'sonner';
 import imageCompression from 'browser-image-compression';
 
@@ -15,6 +15,7 @@ interface ProjectFormProps {
 
 export default function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(project?.imageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,44 +51,61 @@ export default function ProjectForm({ project, onSubmit, onCancel }: ProjectForm
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
+    
+    // Instant local preview
+    const localPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(localPreviewUrl);
+
     try {
-      // Image compression options
+      // Ultra-optimized for sub-20 second uploads
       const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
+        maxSizeMB: 0.3, // Reduced from 0.5MB for faster transfer
+        maxWidthOrHeight: 800, // Reduced from 1024px for faster processing
         useWebWorker: true,
+        initialQuality: 0.5, // Faster compression
       };
 
-      toast.info('Compressing image...');
       let fileToUpload: File | Blob = file;
+      
+      // Skip compression if file is already small (e.g., < 300KB)
+      if (file.size > 300 * 1024) {
+        toast.info('Fast-optimizing image...');
+        try {
+          fileToUpload = await imageCompression(file, options);
+        } catch (compressionError) {
+          console.warn('Image compression failed, uploading original file:', compressionError);
+        }
+      }
+      
+      toast.info('Uploading to permanent storage...');
       try {
-        fileToUpload = await imageCompression(file, options);
-      } catch (compressionError) {
-        console.warn('Image compression failed, uploading original file:', compressionError);
+        const { url, isPermanent } = await uploadFile(
+          `projects/${Date.now()}-${file.name}`, 
+          fileToUpload, 
+          (progress) => {
+            console.log(`Project upload progress: ${progress}%`);
+            setUploadProgress(Math.max(1, progress));
+          }
+        );
+        
+        setValue('imageUrl', url);
+        setPreviewUrl(url);
+        setIsUploading(false);
+        
+        if (isPermanent) {
+          toast.success('Image optimized and saved permanently');
+        } else {
+          toast.warning('Image saved to temporary storage. Please check your Firebase connection for permanent storage.');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsUploading(false);
       }
-      
-      // Local Server Upload
-      const formData = new FormData();
-      formData.append('file', fileToUpload, file.name);
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Server upload failed');
-      }
-      
-      const { url: downloadUrl } = await response.json();
-      
-      setValue('imageUrl', downloadUrl);
-      setPreviewUrl(downloadUrl);
-      toast.success('Image optimized and uploaded successfully');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
       setIsUploading(false);
     }
   };
@@ -134,8 +152,18 @@ export default function ProjectForm({ project, onSubmit, onCancel }: ProjectForm
                 )}
                 
                 {isUploading && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4">
                     <Loader2 className="text-brand-primary animate-spin" size={32} />
+                    <div className="w-32 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${uploadProgress}%` }}
+                        className="h-full bg-brand-primary" 
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-white uppercase tracking-widest">
+                      {Math.round(uploadProgress)}%
+                    </span>
                   </div>
                 )}
               </div>
@@ -151,10 +179,12 @@ export default function ProjectForm({ project, onSubmit, onCancel }: ProjectForm
                 <label className="text-sm font-medium text-gray-400">Or Image URL</label>
                 <div className="relative">
                   <input
-                    {...register('imageUrl', { required: 'Image URL is required' })}
+                    {...register('imageUrl', { 
+                      required: 'Image URL is required',
+                      onChange: (e) => setPreviewUrl(e.target.value)
+                    })}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 focus:border-brand-primary outline-none transition-all"
                     placeholder="https://picsum.photos/..."
-                    onChange={(e) => setPreviewUrl(e.target.value)}
                   />
                   <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                 </div>

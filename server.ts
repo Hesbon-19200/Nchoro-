@@ -17,7 +17,8 @@ async function startServer() {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Configure multer for local storage
   const storage = multer.diskStorage({
@@ -32,17 +33,20 @@ async function startServer() {
 
   const upload = multer({ 
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   });
 
   // Local Upload Endpoint
   app.post('/api/upload', upload.single('file'), (req, res) => {
+    console.log(`[Server] Received upload request: ${req.file?.originalname} (${req.file?.size} bytes)`);
     if (!req.file) {
+      console.warn('[Server] No file uploaded in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     // Return the URL to the uploaded file
     const fileUrl = `/uploads/${req.file.filename}`;
+    console.log(`[Server] Upload successful: ${fileUrl}`);
     res.json({ url: fileUrl });
   });
 
@@ -74,7 +78,7 @@ async function startServer() {
       await transporter.sendMail({
         from: `"${name}" <${email}>`,
         to: process.env.CONTACT_EMAIL,
-        subject: `Portfolio Contact: ${subject}`,
+        subject: `Nchoro TechHub Contact: ${subject}`,
         text: message,
       });
       */
@@ -126,9 +130,12 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+  
+  // Set server timeout to 5 minutes for large file uploads
+  server.timeout = 300000;
 }
 
 startServer();

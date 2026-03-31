@@ -44,7 +44,7 @@ export default function ProjectDetails() {
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl font-display font-bold mb-6">Project <span className="text-gradient">Not Found</span></h1>
-          <Link to="/portfolio" className="text-brand-primary font-semibold">Back to Portfolio</Link>
+          <Link to="/projects" className="text-brand-primary font-semibold">Back to Projects</Link>
         </div>
       </main>
     );
@@ -56,10 +56,10 @@ export default function ProjectDetails() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
-          to="/portfolio"
+          to="/projects"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-12 transition-colors"
         >
-          <ArrowLeft size={20} /> Back to Portfolio
+          <ArrowLeft size={20} /> Back to Projects
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -71,10 +71,15 @@ export default function ProjectDetails() {
               className="aspect-video rounded-[2rem] overflow-hidden border border-white/10 shadow-glow"
             >
               <img
-                src={project.imageUrl}
+                src={project.imageUrl || `https://picsum.photos/seed/${project.id}/1200/800`}
                 alt={project.title}
                 className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes('picsum.photos')) {
+                    target.src = `https://picsum.photos/seed/${project.id}/1200/800`;
+                  }
+                }}
               />
             </motion.div>
 

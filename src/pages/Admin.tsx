@@ -1,27 +1,29 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { Plus, Edit2, Trash2, LogOut, FolderKanban, MessageSquare, LogIn, Settings, User as UserIcon, Upload, Loader2, Save, Briefcase, GraduationCap, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, LogOut, FolderKanban, MessageSquare, LogIn, Settings, User as UserIcon, Upload, Loader2, Save, Briefcase, GraduationCap, Phone, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import ProjectForm from '../components/ProjectForm';
-import { Project, ContactMessage, Skill, Profile, Experience, Education } from '../types';
+import { Project, ContactMessage, Skill, Profile, Experience, Education, Certificate } from '../types';
 import { subscribeToProjects, deleteProject, addProject, updateProject } from '../services/projectService';
 import { subscribeToSkills, deleteSkill, addSkill, updateSkill } from '../services/skillService';
 import { getProfile, updateProfile } from '../services/profileService';
 import { subscribeToExperience, deleteExperience, addExperience, updateExperience } from '../services/experienceService';
 import { subscribeToEducation, deleteEducation, addEducation, updateEducation } from '../services/educationService';
+import { subscribeToCertificates, deleteCertificate, addCertificate, updateCertificate } from '../services/certificateService';
 import { subscribeToMessages, deleteMessage } from '../services/messageService';
 import { cn } from '../lib/utils';
-import { auth, loginWithGoogle, logout, onAuthStateChanged, db, collection, query, orderBy, onSnapshot, User, storage, ref, uploadBytes, getDownloadURL } from '../firebase';
+import { auth, loginWithGoogle, logout, onAuthStateChanged, db, collection, query, orderBy, onSnapshot, User, storage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, uploadFile } from '../firebase';
 import imageCompression from 'browser-image-compression';
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState<'projects' | 'messages' | 'skills' | 'profile' | 'experience' | 'education'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'messages' | 'skills' | 'profile' | 'experience' | 'education' | 'certificates'>('projects');
   const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [messagesList, setMessagesList] = useState<ContactMessage[]>([]);
   const [skillsList, setSkillsList] = useState<Skill[]>([]);
   const [experienceList, setExperienceList] = useState<Experience[]>([]);
   const [educationList, setEducationList] = useState<Education[]>([]);
+  const [certificatesList, setCertificatesList] = useState<Certificate[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -32,63 +34,81 @@ export default function Admin() {
   const [editingExperience, setEditingExperience] = useState<Experience | undefined>(undefined);
   const [isEducationFormOpen, setIsEducationFormOpen] = useState(false);
   const [editingEducation, setEditingEducation] = useState<Education | undefined>(undefined);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'project' | 'skill' | 'experience' | 'education' | 'message' } | null>(null);
+  const [isCertificateFormOpen, setIsCertificateFormOpen] = useState(false);
+  const [editingCertificate, setEditingCertificate] = useState<Certificate | undefined>(undefined);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'project' | 'skill' | 'experience' | 'education' | 'message' | 'certificate' } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+  const [uploadProgressProfile, setUploadProgressProfile] = useState(0);
+  const [localProfilePreview, setLocalProfilePreview] = useState<string | null>(null);
+  const [isUploadingCertificate, setIsUploadingCertificate] = useState(false);
+  const [uploadProgressCertificate, setUploadProgressCertificate] = useState(0);
+  const [localCertificatePreview, setLocalCertificatePreview] = useState<string | null>(null);
 
   const ADMIN_EMAIL = 'nchorohesbon96@gmail.com';
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser && currentUser.email === ADMIN_EMAIL) {
-        // Subscribe to projects
-        const unsubscribeProjects = subscribeToProjects((data) => {
-          setProjectsList(data);
-          setIsLoading(false);
-        });
-
-        // Subscribe to messages
-        const unsubscribeMessages = subscribeToMessages((data) => {
-          setMessagesList(data);
-        });
-
-        // Subscribe to skills
-        const unsubscribeSkills = subscribeToSkills((data) => {
-          setSkillsList(data);
-        });
-
-        // Subscribe to experience
-        const unsubscribeExperience = subscribeToExperience((data) => {
-          setExperienceList(data);
-        });
-
-        // Subscribe to education
-        const unsubscribeEducation = subscribeToEducation((data) => {
-          setEducationList(data);
-        });
-
-        // Fetch profile
-        getProfile().then(data => {
-          if (data) setProfile(data);
-          else setProfile({ aboutMe: '', tagline: '' });
-        });
-
-        return () => {
-          unsubscribeProjects();
-          unsubscribeMessages();
-          unsubscribeSkills();
-          unsubscribeExperience();
-          unsubscribeEducation();
-        };
-      } else {
+      if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
         setIsLoading(false);
       }
     });
 
     return () => unsubscribeAuth();
   }, []);
+
+  useEffect(() => {
+    if (user && user.email === ADMIN_EMAIL) {
+      setIsLoading(true);
+      // Subscribe to projects
+      const unsubscribeProjects = subscribeToProjects((data) => {
+        setProjectsList(data);
+        setIsLoading(false);
+      });
+
+      // Subscribe to messages
+      const unsubscribeMessages = subscribeToMessages((data) => {
+        setMessagesList(data);
+      });
+
+      // Subscribe to skills
+      const unsubscribeSkills = subscribeToSkills((data) => {
+        setSkillsList(data);
+      });
+
+      // Subscribe to experience
+      const unsubscribeExperience = subscribeToExperience((data) => {
+        setExperienceList(data);
+      });
+
+      // Subscribe to education
+      const unsubscribeEducation = subscribeToEducation((data) => {
+        setEducationList(data);
+      });
+
+      // Subscribe to certificates
+      const unsubscribeCertificates = subscribeToCertificates((data) => {
+        setCertificatesList(data);
+      });
+
+      // Fetch profile
+      getProfile().then(data => {
+        if (data) setProfile(data);
+        else setProfile({ aboutMe: '', tagline: '' });
+      });
+
+      return () => {
+        unsubscribeProjects();
+        unsubscribeMessages();
+        unsubscribeSkills();
+        unsubscribeExperience();
+        unsubscribeEducation();
+        unsubscribeCertificates();
+      };
+    }
+  }, [user]);
 
   const handleLogin = async () => {
     try {
@@ -183,52 +203,179 @@ export default function Admin() {
     if (!file || !profile) return;
 
     setIsUploadingProfile(true);
+    setUploadProgressProfile(0);
+    
+    // Instant local preview
+    const localUrl = URL.createObjectURL(file);
+    setLocalProfilePreview(localUrl);
+
     try {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please upload an image file');
+        setIsUploadingProfile(false);
+        setLocalProfilePreview(null);
         return;
       }
 
-      // Image compression options
+      // Ultra-optimized for sub-20 second uploads
       const options = {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 800,
+        maxSizeMB: 0.1, // Reduced from 0.2MB for near-instant transfer
+        maxWidthOrHeight: 300, // Reduced from 400px for near-instant processing
         useWebWorker: true,
+        initialQuality: 0.5, // Faster compression
       };
 
-      toast.info('Optimizing profile image...');
       let fileToUpload: File | Blob = file;
+      
+      // Skip compression if file is already small (e.g., < 100KB)
+      if (file.size > 100 * 1024) {
+        toast.info('Fast-optimizing profile image...');
+        try {
+          fileToUpload = await imageCompression(file, options);
+        } catch (compressionError) {
+          console.warn('Image compression failed, uploading original file:', compressionError);
+        }
+      }
+      
+      toast.info('Uploading to permanent storage...');
       try {
-        fileToUpload = await imageCompression(file, options);
-      } catch (compressionError) {
-        console.warn('Image compression failed, uploading original file:', compressionError);
+        const { url, isPermanent } = await uploadFile(
+          `profile/${Date.now()}-${file.name}`, 
+          fileToUpload, 
+          (progress) => {
+            console.log(`Profile upload progress: ${progress}%`);
+            setUploadProgressProfile(Math.max(1, progress));
+          }
+        );
+        
+        const updatedProfile = { ...profile, profileImageUrl: url };
+        await updateProfile(updatedProfile);
+        setProfile(updatedProfile);
+        setIsUploadingProfile(false);
+        
+        if (isPermanent) {
+          toast.success('Profile image saved permanently');
+        } else {
+          toast.warning('Profile image saved to temporary storage. Please check your Firebase connection for permanent storage.');
+        }
+      } catch (error) {
+        console.error('Profile upload error:', error);
+        toast.error(`Failed to upload profile image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsUploadingProfile(false);
       }
-      
-      // Local Server Upload
-      const formData = new FormData();
-      formData.append('file', fileToUpload, file.name);
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Server upload failed');
-      }
-      
-      const { url: downloadUrl } = await response.json();
-      
-      const updatedProfile = { ...profile, profileImageUrl: downloadUrl };
-      await updateProfile(updatedProfile);
-      setProfile(updatedProfile);
-      toast.success('Profile image updated');
     } catch (error) {
       console.error('Profile upload error:', error);
       toast.error(`Failed to upload profile image: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
       setIsUploadingProfile(false);
+    }
+  };
+
+  const handleCertificateSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const certificateData = {
+      title: formData.get('title') as string,
+      issuer: formData.get('issuer') as string,
+      date: formData.get('date') as string,
+      imageUrl: localCertificatePreview || '',
+      link: formData.get('link') as string || '',
+      order: parseInt(formData.get('order') as string) || 0,
+    };
+
+    if (!certificateData.imageUrl) {
+      toast.error('Please upload a certificate image');
+      return;
+    }
+
+    try {
+      if (editingCertificate) {
+        await updateCertificate(editingCertificate.id, certificateData);
+        toast.success('Certificate updated');
+      } else {
+        await addCertificate(certificateData);
+        toast.success('Certificate added');
+      }
+      setIsCertificateFormOpen(false);
+      setEditingCertificate(undefined);
+      setLocalCertificatePreview(null);
+    } catch (error) {
+      toast.error('Failed to save certificate');
+    }
+  };
+
+  const handleDeleteCertificate = async (id: string) => {
+    try {
+      await deleteCertificate(id);
+      toast.success('Certificate deleted');
+      setDeleteConfirm(null);
+    } catch (error) {
+      toast.error('Failed to delete certificate');
+    }
+  };
+
+  const handleCertificateImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCertificate(true);
+    setUploadProgressCertificate(0);
+    
+    const localUrl = URL.createObjectURL(file);
+    setLocalCertificatePreview(localUrl);
+
+    try {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        setIsUploadingCertificate(false);
+        setLocalCertificatePreview(null);
+        return;
+      }
+
+      const options = {
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+        initialQuality: 0.5,
+      };
+
+      let fileToUpload: File | Blob = file;
+      if (file.size > 300 * 1024) {
+        toast.info('Fast-optimizing certificate image...');
+        try {
+          fileToUpload = await imageCompression(file, options);
+        } catch (compressionError) {
+          console.warn('Image compression failed:', compressionError);
+        }
+      }
+      
+      toast.info('Uploading certificate...');
+      try {
+        const { url, isPermanent } = await uploadFile(
+          `certificates/${Date.now()}-${file.name}`, 
+          fileToUpload, 
+          (progress) => {
+            console.log(`Certificate upload progress: ${progress}%`);
+            setUploadProgressCertificate(Math.max(1, progress));
+          }
+        );
+        
+        setLocalCertificatePreview(url);
+        setIsUploadingCertificate(false);
+        
+        if (isPermanent) {
+          toast.success('Certificate image uploaded permanently');
+        } else {
+          toast.warning('Certificate image saved to temporary storage. Please check your Firebase connection for permanent storage.');
+        }
+      } catch (error) {
+        console.error('Certificate upload error:', error);
+        toast.error(`Failed to upload certificate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsUploadingCertificate(false);
+      }
+    } catch (error) {
+      console.error('Certificate upload error:', error);
+      setIsUploadingCertificate(false);
     }
   };
 
@@ -336,7 +483,7 @@ export default function Admin() {
         <Navbar />
         <div className="glass p-12 rounded-[3rem] text-center max-w-md w-full">
           <h1 className="text-3xl font-display font-bold mb-6">Admin <span className="text-gradient">Access</span></h1>
-          <p className="text-gray-400 mb-8">Please log in with your authorized Google account to manage the portfolio.</p>
+          <p className="text-gray-400 mb-8">Please log in with your authorized Google account to manage the projects.</p>
           <button
             onClick={handleLogin}
             className="w-full py-4 bg-gradient-brand rounded-2xl font-bold flex items-center justify-center gap-2 hover:shadow-glow transition-all"
@@ -441,6 +588,16 @@ export default function Admin() {
               )}
             >
               <GraduationCap size={20} /> Education ({educationList.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab('certificates')}
+              className={cn(
+                "w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-semibold transition-all",
+                activeTab === 'certificates' ? "bg-brand-primary text-white shadow-glow" : "bg-white/5 text-gray-400 hover:bg-white/10"
+              )}
+            >
+              <Award size={20} /> Certificates ({certificatesList.length})
             </button>
 
             <button
@@ -775,6 +932,74 @@ export default function Admin() {
               </div>
             )}
 
+            {activeTab === 'certificates' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-display font-bold">Manage Certificates</h2>
+                  <button
+                    onClick={() => {
+                      setEditingCertificate(undefined);
+                      setLocalCertificatePreview(null);
+                      setIsCertificateFormOpen(true);
+                    }}
+                    className="px-6 py-3 bg-gradient-brand rounded-xl font-bold flex items-center gap-2 hover:shadow-glow transition-all"
+                  >
+                    <Plus size={20} /> Add Certificate
+                  </button>
+                </div>
+
+                <div className="glass rounded-3xl overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="px-6 py-4 text-sm font-semibold text-gray-400">Certificate</th>
+                        <th className="px-6 py-4 text-sm font-semibold text-gray-400">Issuer & Date</th>
+                        <th className="px-6 py-4 text-sm font-semibold text-gray-400 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {certificatesList.length === 0 ? (
+                        <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-500">No certificates found.</td></tr>
+                      ) : certificatesList.map((cert) => (
+                        <tr key={cert.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <img src={cert.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                              <div className="font-semibold">{cert.title}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">{cert.issuer}</div>
+                            <div className="text-xs text-gray-500">{cert.date}</div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingCertificate(cert);
+                                  setLocalCertificatePreview(cert.imageUrl);
+                                  setIsCertificateFormOpen(true);
+                                }}
+                                className="p-2 text-gray-400 hover:text-brand-primary transition-colors"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm({ id: cert.id, type: 'certificate' })}
+                                className="p-2 text-gray-400 hover:text-brand-accent transition-colors"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'profile' && (
               <div className="space-y-8">
                 <div className="flex items-center justify-between">
@@ -796,8 +1021,12 @@ export default function Admin() {
                     <div className="glass p-6 rounded-3xl text-center">
                       <div className="relative w-32 h-32 mx-auto mb-4 group">
                         <div className="w-full h-full rounded-full overflow-hidden border-2 border-brand-primary/20">
-                          {profile?.profileImageUrl ? (
-                            <img src={profile.profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                          {localProfilePreview || profile?.profileImageUrl ? (
+                            <img 
+                              src={localProfilePreview || profile?.profileImageUrl} 
+                              alt="Profile" 
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div className="w-full h-full bg-white/5 flex items-center justify-center text-gray-500">
                               <UserIcon size={48} />
@@ -809,8 +1038,18 @@ export default function Admin() {
                           <input type="file" className="hidden" onChange={handleProfileImageUpload} accept="image/*" />
                         </label>
                         {isUploadingProfile && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full gap-2">
                             <Loader2 className="text-brand-primary animate-spin" size={24} />
+                            <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${uploadProgressProfile}%` }}
+                                className="h-full bg-brand-primary" 
+                              />
+                            </div>
+                            <span className="text-[8px] font-bold text-white uppercase tracking-widest">
+                              {Math.round(uploadProgressProfile)}%
+                            </span>
                           </div>
                         )}
                       </div>
@@ -1038,6 +1277,122 @@ export default function Admin() {
         </div>
       )}
 
+      {isCertificateFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass p-8 rounded-[2.5rem] w-full max-w-md overflow-y-auto max-h-[90vh]"
+          >
+            <h2 className="text-2xl font-display font-bold mb-6">{editingCertificate ? 'Edit' : 'Add'} Certificate</h2>
+            <form onSubmit={handleCertificateSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Certificate Title</label>
+                <input
+                  name="title"
+                  defaultValue={editingCertificate?.title}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary transition-colors"
+                  placeholder="e.g. Google UX Design Professional Certificate"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Issuer</label>
+                <input
+                  name="issuer"
+                  defaultValue={editingCertificate?.issuer}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary transition-colors"
+                  placeholder="e.g. Coursera / Google"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Date</label>
+                <input
+                  name="date"
+                  defaultValue={editingCertificate?.date}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary transition-colors"
+                  placeholder="e.g. October 2023"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Certificate Link (Optional)</label>
+                <input
+                  name="link"
+                  defaultValue={editingCertificate?.link}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary transition-colors"
+                  placeholder="e.g. https://coursera.org/verify/..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Display Order</label>
+                <input
+                  name="order"
+                  type="number"
+                  defaultValue={editingCertificate?.order || 0}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary transition-colors"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Certificate Image</label>
+                <div className="flex flex-col gap-4">
+                  {localCertificatePreview && (
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-white/10">
+                      <img src={localCertificatePreview} alt="Preview" className="w-full h-full object-cover" />
+                      {isUploadingCertificate && (
+                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+                          <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
+                            <motion.div 
+                              className="h-full bg-brand-primary"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${uploadProgressCertificate}%` }}
+                            />
+                          </div>
+                          <span className="text-xs mt-2 font-bold">{Math.round(uploadProgressCertificate)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCertificateImageUpload}
+                    className="hidden"
+                    id="certificate-image-upload"
+                  />
+                  <label
+                    htmlFor="certificate-image-upload"
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-white/10 hover:border-brand-primary hover:bg-white/5 transition-all cursor-pointer"
+                  >
+                    <Upload size={20} />
+                    {localCertificatePreview ? 'Change Image' : 'Upload Certificate Image'}
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsCertificateFormOpen(false)}
+                  className="flex-1 py-3 rounded-xl font-bold bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploadingCertificate}
+                  className="flex-1 py-3 rounded-xl font-bold bg-gradient-brand hover:shadow-glow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editingCertificate ? 'Update' : 'Save'} Certificate
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       {isExperienceFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <motion.div
@@ -1147,6 +1502,8 @@ export default function Admin() {
                     else if (deleteConfirm.type === 'experience') handleDeleteExperience(deleteConfirm.id);
                     else if (deleteConfirm.type === 'education') handleDeleteEducation(deleteConfirm.id);
                     else if (deleteConfirm.type === 'message') handleDeleteMessage(deleteConfirm.id);
+                    else if (deleteConfirm.type === 'certificate') handleDeleteCertificate(deleteConfirm.id);
+                    setDeleteConfirm(null);
                   }}
                   className="flex-1 py-4 rounded-2xl font-bold bg-brand-accent hover:bg-brand-accent/80 transition-colors text-white"
                 >

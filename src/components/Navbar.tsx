@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 
 const navLinks = [
   { name: 'Home', path: '/' },
-  { name: 'Portfolio', path: '/portfolio' },
+  { name: 'Projects', path: '/projects' },
+  { name: 'Certificates', path: '/#certificates' },
   { name: 'About', path: '/about' },
   { name: 'Contact', path: '/contact' },
 ];
@@ -41,18 +42,18 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-display font-bold text-gradient">ProPortfolio</span>
+            <span className="text-2xl font-display font-bold text-gradient">Nchoro TechHub</span>
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-brand-primary",
-                  location.pathname === link.path ? "text-brand-primary" : "text-gray-400"
+                  "px-4 py-2 text-sm font-medium transition-all rounded-full hover:bg-white/5",
+                  location.pathname === link.path ? "text-brand-primary bg-white/5" : "text-gray-400 hover:text-white"
                 )}
               >
                 {link.name}
@@ -63,11 +64,11 @@ export default function Navbar() {
               <Link
                 to="/admin"
                 className={cn(
-                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-brand-primary",
-                  location.pathname === '/admin' ? "text-brand-primary" : "text-gray-400"
+                  "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-full hover:bg-white/5",
+                  location.pathname === '/admin' ? "text-brand-primary bg-white/5" : "text-gray-400 hover:text-white"
                 )}
               >
-                <LayoutDashboard size={16} /> Dashboard
+                <LayoutDashboard size={14} /> Dashboard
               </Link>
             )}
 
