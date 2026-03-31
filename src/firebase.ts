@@ -102,39 +102,41 @@ export async function uploadFile(
       try {
         console.log(`[Upload] Starting Firebase Storage upload to: ${path}`);
         const storageRef = ref(currentStorage, path);
-        const uploadTask = uploadBytesResumable(storageRef, file);
         
-        // Set a timeout to cancel the upload if it hangs
-        const timeoutId = setTimeout(() => {
-          console.warn(`[Upload] Firebase Storage upload timed out after ${TIMEOUT_MS}ms`);
-          uploadTask.cancel();
-          reject(new Error('Firebase Storage upload timed out'));
-        }, TIMEOUT_MS);
-
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log(`[Upload] Firebase Progress: ${Math.round(progress)}%`);
-            if (onProgress) onProgress(progress);
-          }, 
-          (error) => {
-            clearTimeout(timeoutId);
-            console.warn('[Upload] Firebase Storage task error:', error);
-            reject(error);
-          }, 
-          async () => {
-            clearTimeout(timeoutId);
-            try {
-              console.log('[Upload] Firebase Storage task completed, getting URL...');
-              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-              console.log('[Upload] Firebase Storage URL obtained:', downloadUrl);
-              resolve(downloadUrl);
-            } catch (urlError) {
-              console.error('[Upload] Error getting download URL:', urlError);
-              reject(urlError);
-            }
+        // Use uploadBytes for a simpler, non-resumable upload path which can be more reliable in some environments
+        uploadBytes(storageRef, file).then(async (snapshot) => {
+          console.log('[Upload] Firebase Storage upload successful, getting URL...');
+          try {
+            const downloadUrl = await getDownloadURL(snapshot.ref);
+            console.log('[Upload] Firebase Storage URL obtained:', downloadUrl);
+            resolve(downloadUrl);
+          } catch (urlError) {
+            console.error('[Upload] Error getting download URL:', urlError);
+            reject(urlError);
           }
-        );
+        }).catch((error) => {
+          console.error('[Upload] Firebase Storage upload error:', error);
+          
+          // Provide more helpful error messages for common issues
+          let helpfulMessage = error.message;
+          if (error.code === 'storage/unauthorized') {
+            helpfulMessage = 'Permission denied. Please ensure you are logged in as the admin and that you have deployed the storage.rules to your Firebase Console.';
+          } else if (error.code === 'storage/retry-limit-exceeded') {
+            helpfulMessage = 'Upload timed out or failed repeatedly. This could be a CORS issue or a network problem.';
+          } else if (error.code === 'storage/canceled') {
+            helpfulMessage = 'Upload was canceled.';
+          } else if (error.code === 'storage/unknown') {
+            helpfulMessage = 'An unknown error occurred. Check the browser console for more details.';
+          }
+          
+          // Log detailed error info if available
+          if (error.code) console.error(`[Upload] Error Code: ${error.code}`);
+          if (error.serverResponse) console.error(`[Upload] Server Response: ${error.serverResponse}`);
+          
+          const enhancedError = new Error(helpfulMessage);
+          (enhancedError as any).code = error.code;
+          reject(enhancedError);
+        });
       } catch (initError) {
         console.error('[Upload] Firebase Storage initialization error:', initError);
         reject(initError);
